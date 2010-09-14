@@ -20,7 +20,7 @@ describe SubscriptionTransaction do
     end
     it "has amount in Money" do
       @trans.amount.should be_a(Money)
-      @trans.amount.format.should == '$25.00'
+      @trans.amount.format.should == '€25.00'
     end
   end
   # it "has the transaction type"

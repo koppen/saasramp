@@ -26,7 +26,7 @@ describe SubscriptionPlan do
   
   it "calculates prorated value" do
     @basic.prorated_value(30).should == @basic.rate
-    @basic.prorated_value(0).should == Money.new(0)
+    @basic.prorated_value(0).should == Money.new(0, "EUR")
     @basic.prorated_value(10).should == @basic.rate / 3
   end
   

@@ -4,7 +4,12 @@
 class SubscriptionTransaction < ActiveRecord::Base
   belongs_to  :subscription
   serialize   :params
-  composed_of :amount, :class_name => 'Money', :mapping => [ %w(amount_cents cents) ], :allow_nil => true
+  #composed_of :amount, :class_name => 'Money', :mapping => [ %w(amount_cents cents) ], :allow_nil => true
+  
+  composed_of :amount, :class_name => 'Money', :allow_nil => true,
+    :mapping => [%w(amount_cents cents), %w(currency currency_as_string)],
+    :constructor => Proc.new { |cents, currency| Money.new(cents || 0, currency || SubscriptionConfig.currency) }
+
   attr_accessor :token
   
   # find recent 'charge' transactions that are greater or equal to amount

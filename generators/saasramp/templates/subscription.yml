@@ -11,6 +11,9 @@ defaults: &defaults
   # grace period length (days) after subscription is past due before it is expired (closed down)
   grace_period: 7
   
+  # currency in which the subscriptions are billed
+  currency: EUR
+  
   # define the mailer class name to use (default SubscriptionMailer provided with plugin)
   mailer_class: SubscriptionMailer
       

@@ -4,7 +4,12 @@ class Subscription < ActiveRecord::Base
   belongs_to :plan,         :class_name => 'SubscriptionPlan'
   has_one    :profile,      :class_name => 'SubscriptionProfile', :dependent => :destroy  
   has_many   :transactions, :class_name => 'SubscriptionTransaction', :dependent => :destroy, :order => 'id DESC' #created_at is in seconds not microseconds?! so assume higher id's are newer
-  composed_of :balance, :class_name => 'Money', :mapping => [ %w(balance_cents cents) ], :allow_nil => true
+  
+  #composed_of :balance, :class_name => 'Money', :mapping => [ %w(balance_cents cents) ], :allow_nil => true
+  composed_of :balance, :class_name => 'Money', :allow_nil => true,
+    :mapping => [%w(balance_cents cents), %w(currency currency_as_string)],
+    :constructor => Proc.new { |cents, currency| Money.new(cents || 0, currency || SubscriptionConfig.currency) }
+  
   
   before_validation :initialize_defaults
   after_create      :initialize_state_from_plan
@@ -183,6 +188,8 @@ class Subscription < ActiveRecord::Base
   end
   
   def payment_received(amount)
+    transaction do
+    end
   end
 
   # credit a negative balance to the subscribers credit card

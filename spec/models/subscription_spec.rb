@@ -75,7 +75,7 @@ describe Subscription do
     end
     
     it "charges credit card the current plan rate" do
-      SubscriptionTransaction.should_receive(:charge).with(Money.new(1000), anything).and_return( SubscriptionTransaction.new(:success => true) )
+      SubscriptionTransaction.should_receive(:charge).with(Money.new(1000, "EUR"), anything).and_return( SubscriptionTransaction.new(:success => true) )
       @subscription.renew      
     end
     
@@ -350,15 +350,19 @@ describe Subscription do
     #describe "when expired"
   end
 
+  def create_subscriber_with_subscription_1500
+    @user = create_subscriber
+    @subscription = @user.subscription
+    @subscription.profile.state = 'authorized'
+    @subscription.profile.profile_key = '1'
+    @subscription.update_attribute :balance_cents, 1500
+    SubscriptionTransaction.stub!(:charge).and_return( SubscriptionTransaction.new(:success => true, :amount => Money.new(1500, "EUR") ))
+  end
+
   # -------------------------
   describe "charge_balance" do
     before :each do
-      @user = create_subscriber
-      @subscription = @user.subscription
-      @subscription.profile.state = 'authorized'
-      @subscription.profile.profile_key = '1'
-      @subscription.update_attribute :balance_cents, 1500
-      SubscriptionTransaction.stub!(:charge).and_return( SubscriptionTransaction.new(:success => true, :amount => Money.new(1500) ))
+      create_subscriber_with_subscription_1500
     end
     
     it "returns nil if zero balance" do
@@ -370,7 +374,7 @@ describe Subscription do
       @subscription.charge_balance.should be_false
     end
     it "returns amount charged if successful" do
-      @subscription.charge_balance.should == Money.new(1500)
+      @subscription.charge_balance.should == Money.new(1500, "EUR")
     end
     
     it "charges against balance" do
@@ -379,7 +383,7 @@ describe Subscription do
     end
     
     it "charges credit card" do
-      SubscriptionTransaction.should_receive(:charge).with(Money.new(1500), anything).and_return( SubscriptionTransaction.new(:success => true ))
+      SubscriptionTransaction.should_receive(:charge).with(Money.new(1500, "EUR"), anything).and_return( SubscriptionTransaction.new(:success => true ))
       @subscription.charge_balance
     end
     
@@ -414,6 +418,17 @@ describe Subscription do
   end
   
   # -------------------------
+  describe "payment_received" do
+    before :each do
+      create_subscriber_with_subscription_1500
+    end
+    
+    it "test" do
+      fail
+    end
+  end  
+  
+  # -------------------------
   describe "credit_balance" do
     before :each do
       @user = create_subscriber
@@ -421,7 +436,7 @@ describe Subscription do
       @subscription.profile.state = 'authorized'
       @subscription.profile.profile_key = '1'
       @subscription.update_attribute :balance_cents, -1500
-      SubscriptionTransaction.stub!(:credit).and_return( SubscriptionTransaction.new(:success => true, :amount => Money.new(1500) ))
+      SubscriptionTransaction.stub!(:credit).and_return( SubscriptionTransaction.new(:success => true, :amount => Money.new(1500, "EUR") ))
     end
     
     it "returns nil if zero balance" do
@@ -433,7 +448,7 @@ describe Subscription do
       @subscription.credit_balance.should be_false
     end
     it "returns amount credited if successful" do
-      @subscription.credit_balance.should == Money.new(1500)
+      @subscription.credit_balance.should == Money.new(1500, "EUR")
     end
     it "credits balance" do
       @subscription.credit_balance

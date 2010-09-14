@@ -1,7 +1,10 @@
 class SubscriptionPlan < ActiveRecord::Base
   has_many :subscriptions
   
-  composed_of :rate, :class_name => 'Money', :mapping => [ %w(rate_cents cents) ]
+  #composed_of :rate, :class_name => 'Money', :mapping => [ %w(rate_cents cents) ]
+  composed_of :rate, :class_name => 'Money',
+    :mapping => [%w(rate_cents cents), %w(currency currency_as_string)],
+    :constructor => Proc.new { |cents, currency| Money.new(cents || 0, currency || SubscriptionConfig.currency) }
 
   validates_presence_of :name
   validates_uniqueness_of :name
@@ -18,7 +21,7 @@ class SubscriptionPlan < ActiveRecord::Base
     total_days = interval * 30
     daily_rate = rate_cents.to_f / total_days
     # round down to penny
-    Money.new( (days * daily_rate).to_i )
+    Money.new( (days * daily_rate).to_i, SubscriptionConfig.currency)
   end
   
   # ---------------
@@ -28,4 +31,5 @@ class SubscriptionPlan < ActiveRecord::Base
     default_plan ||= SubscriptionPlan.first( :conditions => { :rate_cents => 0 })
     default_plan ||= SubscriptionPlan.create( :name => 'free' ) #bootstrapper and tests
   end
+  
 end
