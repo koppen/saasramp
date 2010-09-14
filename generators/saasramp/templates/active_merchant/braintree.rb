@@ -1,5 +1,5 @@
 # monkeypatch the gateway
-include ActiveMerchant::Billing
+#include ActiveMerchant::Billing
 
 class BraintreeResponse < ActiveMerchant::Billing::Response
   def token
