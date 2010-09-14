@@ -1,6 +1,9 @@
-= SaasRamp
+= Fork notes
 
-[notice: not yet used in production]
+This fork is intended to add functionality for active merchants 'integrations' powered payment solutions (those like PayPal Express)
+
+
+= SaasRamp
 
 SaasRamp is an open source Rails plugin which enables subscription billings in your application. I decided to take a somewhat different approach than others I have seen. It is built as a wrapper on ActiveMerchant, stores credit cards in the gateway, handles its own daily processing, and is completely independent of the authorization and authentication you choose.
 
