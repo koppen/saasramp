@@ -181,6 +181,9 @@ class Subscription < ActiveRecord::Base
       tx.success && tx.amount
     end
   end
+  
+  def payment_received(amount)
+  end
 
   # credit a negative balance to the subscribers credit card
   # returns amount credited on success, false for failure, nil for nothing 
