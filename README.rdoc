@@ -2,6 +2,11 @@
 
 This fork is intended to add functionality for active merchants 'integrations' powered payment solutions (those like PayPal Express)
 
+- Added support for currency other than USD (Notice: there can only be one currency used in the system)
+
+
+
+
 
 = SaasRamp
 
