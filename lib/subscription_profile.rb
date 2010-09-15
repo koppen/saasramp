@@ -3,9 +3,11 @@ class SubscriptionProfile < ActiveRecord::Base
   #validates_presence_of :subscription_id   
   
   attr_accessor       :request_ip, :credit_card
-  validate            :validate_card  
-  before_save         :store_card
-  before_destroy      :unstore_card
+  
+  ## disable to make adyen work / we don't have a real creditcard here, just a token
+  #validate            :validate_card  
+  #before_save         :store_card
+  #before_destroy      :unstore_card
   
   attr_accessible # none
   
@@ -48,6 +50,15 @@ class SubscriptionProfile < ActiveRecord::Base
       :type        => card_type
     )
   end
+  
+  
+  def store_card_token(card_type, profile_key)
+    self.card_type    = card_type
+    self.profile_key  = profile_key
+    self.state = 'authorized'
+    self
+  end
+  
   
   # -------------
   # move this into a test helper...
@@ -118,6 +129,7 @@ class SubscriptionProfile < ActiveRecord::Base
     end
     true
   end
+  
   
   def store_card
     #debugger

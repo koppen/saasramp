@@ -88,6 +88,11 @@ class SubscriptionTransaction < ActiveRecord::Base
       end
     end
     
+    # this method is intended to be called from payment servers (like PayPal IPN, or Adyen) directly
+    def receive_notification( notification )
+      process_notification( notification )
+    end
+    
     # credit will charge back to the credit card
     # some gateways support doing arbitrary credits, others require a transaction id, 
     # we encapsulate this difference here, looking for a recent successful charge if necessary
@@ -145,6 +150,49 @@ class SubscriptionTransaction < ActiveRecord::Base
       # TODO: LOGGING
       result 
     end 
+    
+    
+    def process_notification( notification )
+      #debugger
+      result = SubscriptionTransaction.new
+      result.amount_cents = notification.amount.is_a?(Money) ? notification.amount.cents : notification.amount
+      result.action       = notification.status
+     # begin 
+        result.success   = notification.success? 
+        result.reference = notification.merchant_reference 
+        result.token     = notification.psp_reference
+        result.message   = notification.operations 
+        result.params    = notification.params 
+        result.test      = notification.test? 
+      # rescue ActiveMerchant::ActiveMerchantError => e 
+      #   result.success   = false 
+      #   result.reference = nil 
+      #   result.message   = e.message 
+      #   result.params    = {} 
+      #   result.test      = SubscriptionConfig.gateway.test? 
+      # end 
+      # TODO: LOGGING
+      result 
+    end
+    
+    #Parameters: {
+      #  "eventDate"=>"2010-09-14T13:11:51.42Z", 
+      #  "merchantReference"=>"ORDER-ID-1284469869", 
+      #  "operations"=>"CANCEL,CAPTURE,REFUND", 
+      #  "action"=>"hook", 
+      #  "live"=>"false", 
+      #  "reason"=>"38783:1111:12/2012", 
+      #  "originalReference"=>"", 
+      #  "value"=>"5000", 
+      # "success"=>"true", 
+      #  "controller"=>"payments", 
+      #  "currency"=>"EUR", 
+      #  "merchantAccountCode"=>"BirkenbihlCOM", 
+      #  "eventCode"=>"AUTHORISATION", 
+      #  "paymentMethod"=>"visa", 
+      #  "pspReference"=>"8612844698860694"}
+    
+    
     
     # maybe should make this a callback option to acts_as_subscriber
     def unique_order_number

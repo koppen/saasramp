@@ -187,9 +187,31 @@ class Subscription < ActiveRecord::Base
     end
   end
   
-  def payment_received(amount)
+  def receive_notification(notification)
+    puts "Hurray! We received a payment of #{notification.amount.format}"
     transaction do
+      
+      # make sure transaction does not exist
+      existing_ref = SubscriptionTransaction.find_by_reference(notification.merchant_reference)
+      unless existing_ref
+        # create record for transction
+        tx  = SubscriptionTransaction.receive_notification( notification )
+        transactions.push( tx )
+        
+        # We have to do something with the credit card
+        # "paymentMethod"=>"visa"
+        profile.store_card_token(notification.payment_method, notification.psp_reference)
+
+        # adjust current balance (except for re-tries)
+        self.balance += notification.amount
+        
+      else
+        puts "There is a transcation with this reference already existing - do nothing: #{existing_ref} - #{notification.inspect}"
+      end
+
     end
+    profile.save
+    save
   end
 
   # credit a negative balance to the subscribers credit card
