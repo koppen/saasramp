@@ -5,10 +5,10 @@ class SubscriptionProfile < ActiveRecord::Base
   attr_accessor       :request_ip, :credit_card
   
   ## disable to make adyen work / we don't have a real creditcard here, just a token
-  #validate            :validate_card  
-  #before_save         :store_card
-  #before_destroy      :unstore_card
-  
+  validate            :validate_card
+  before_save         :store_card
+  before_destroy      :unstore_card
+
   attr_accessible # none
   
   # ------------
@@ -39,8 +39,19 @@ class SubscriptionProfile < ActiveRecord::Base
       else
         ActiveMerchant::Billing::CreditCard.new(card_or_params)
       end
+
+    store_card_values(@credit_card) if @credit_card
   end
-  
+
+  # Stores some non-critical values from credit_card in the SubscriptionProfile
+  def store_card_values(credit_card)
+    self.card_first_name     = credit_card.first_name
+    self.card_last_name      = credit_card.last_name
+    self.card_type           = credit_card.type
+    self.card_display_number = credit_card.display_number
+    self.card_expires_on     = credit_card.expiry_date.expiration.to_date
+  end
+
   def new_credit_card
     # populate new card with some saved values
     ActiveMerchant::Billing::CreditCard.new(
@@ -104,6 +115,8 @@ class SubscriptionProfile < ActiveRecord::Base
   
   # validate :validate_card
   def validate_card
+    return true if SubscriptionConfig.integration_gateway?
+
     #debugger
     return if credit_card.nil?
     # first validate via ActiveMerchant local code
@@ -132,9 +145,10 @@ class SubscriptionProfile < ActiveRecord::Base
   
   
   def store_card
-    #debugger
+    return true if SubscriptionConfig.integration_gateway?
+
     return unless credit_card && credit_card.valid?
-    
+
     transaction do # makes this atomic
       if profile_key
         tx  = SubscriptionTransaction.update( profile_key, credit_card)
@@ -147,11 +161,7 @@ class SubscriptionProfile < ActiveRecord::Base
         self.profile_key = tx.token
     
         # remember some non-secure params for convenience
-        self.card_first_name     = credit_card.first_name
-        self.card_last_name      = credit_card.last_name
-        self.card_type           = credit_card.type
-        self.card_display_number = credit_card.display_number
-        self.card_expires_on     = credit_card.expiry_date.expiration.to_date
+        store_card_values(credit_card)
     
         # clear the card in memory
         self.credit_card = nil
@@ -169,6 +179,8 @@ class SubscriptionProfile < ActiveRecord::Base
   end
   
   def unstore_card
+    return true if SubscriptionConfig.integration_gateway?
+
     return if no_info? || profile_key.nil?
     transaction do # atomic
       tx  = SubscriptionTransaction.unstore( profile_key )

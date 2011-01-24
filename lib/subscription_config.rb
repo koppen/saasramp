@@ -23,7 +23,11 @@ class SubscriptionConfig
   def self.mailer
     @mailer ||= mailer_class.constantize rescue SubscriptionMailer
   end
-  
+
+  def self.integration_gateway?
+    return self.integration_gateway if self.respond_to?(:integration_gateway)
+    return false
+  end
 end
 
 # load configuration settings

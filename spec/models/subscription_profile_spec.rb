@@ -96,13 +96,12 @@ describe SubscriptionProfile do
   
     it "get new card with some kept values" do
       @profile.credit_card = bogus_credit_card
-      @profile.save.should be_true  
       card = @profile.new_credit_card
-      
+
       card.first_name.should == 'Firstname'
       card.last_name.should == 'Lastname'
       card.type.should == 'bogus'
-      
+
       card.number.should be_blank
       card.month.should be_blank
       card.year.should be_blank
