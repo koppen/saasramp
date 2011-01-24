@@ -423,9 +423,7 @@ describe Subscription do
       create_subscriber_with_subscription_1500
     end
     
-    it "test" do
-      fail
-    end
+    it "test"
   end  
   
   # -------------------------
