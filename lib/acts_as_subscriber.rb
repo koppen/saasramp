@@ -39,11 +39,12 @@ module Saasramp           #:nodoc:
  		      # not just change the attribute, really switch plans
  		      subscription.change_plan @newplan unless subscription.nil?
   			end
-  			
-  			def subscription_plan
-  			  subscription.plan if subscription
-  		  end
-  		  
+
+        def subscription_plan
+          return @newplan if @newplan
+          subscription.plan if subscription
+        end
+
   		  # overwrite this method
   		  # compare subscriber to the plan's limits
   		  # return a blank value if ok (nil, false, [], {}), anything else means subscriber has exceeded limits

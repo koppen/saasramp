@@ -40,8 +40,8 @@ end
 
 describe Subscriber, 'instance' do
   let(:subscriber) { Subscriber.send(:acts_as_subscriber); Subscriber.new }
-  let(:plan) { (plan = SubscriptionPlan.new).tap { plan.stub!(:save).and_return(true) } }
-  let(:subscription) { (subscription = Subscription.new).tap { subscription.stub!(:save).and_return(true) } }
+  let(:plan) { (plan = SubscriptionPlan.new(:name => 'Gold')).tap { plan.stub!(:save).and_return(true) } }
+  let(:subscription) { (subscription = Subscription.new).tap { subscription.stub!(:save).and_return(true); subscription.stub!(:plan).and_return(plan) } }
 
   describe "setting the subscription_plan" do
     before :each do
@@ -97,6 +97,15 @@ describe Subscriber, 'instance' do
       it "should return nil" do
         subscriber.subscription_plan.should be_nil
       end
+
+      context "and the subscription plan has recently been set" do
+        let(:some_other_plan) { SubscriptionPlan.new(:name => 'New plan') }
+
+        it "should return the new plan" do
+          subscriber.subscription_plan = some_other_plan
+          subscriber.subscription_plan.should == some_other_plan
+        end
+      end
     end
 
     context "and subscriber does have a subscription" do
@@ -108,6 +117,15 @@ describe Subscriber, 'instance' do
         subscription.stub!(:plan).and_return(subscription)
         subscriber.subscription_plan.should_not be_nil
         subscriber.subscription_plan.should == subscriber.subscription.plan
+      end
+
+      context "and the subscription plan has recently been set" do
+        let(:some_other_plan) { SubscriptionPlan.new(:name => 'New plan') }
+
+        it "should return the new plan" do
+          subscriber.subscription_plan = some_other_plan
+          subscriber.subscription_plan.should == some_other_plan
+        end
       end
     end
   end
