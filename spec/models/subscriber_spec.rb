@@ -1,45 +1,33 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 require File.dirname(__FILE__) + '/../acts_as_subscriber_spec'
 
-class Subscriber
-  include Saasramp::Acts::Subscriber
-
-  class << self
-    # ActiveRecord stubs so we don't have to actually inherit from ActiveRecord and have a database
-    def has_one(*args); end
-    def validates_associated(*args); end
+class ParanoidUser < FakeUser
+  def self.paranoid?
+    true
   end
 end
 
-describe Subscriber, 'class' do
-  context "when it acts as paranoid" do
-    before :each do
-      def Subscriber.paranoid?
-        true
-      end
-    end
-
-    it "should define polymorphic subscription association without dependency" do
-      Subscriber.should_receive(:has_one).with(:subscription, :as => :subscriber)
-      Subscriber.send(:acts_as_subscriber)
-    end
+describe ParanoidUser, 'using acts_as_paranoid' do
+  it "should define polymorphic subscription association without dependency" do
+    ParanoidUser.should_receive(:has_one).with(:subscription, :as => :subscriber)
+    ParanoidUser.send(:acts_as_subscriber)
   end
+end
 
-  context "when it does not act as paranoid" do
-    it "should define polymorphic subscription association with dependency" do
-      Subscriber.should_receive(:has_one).with(:subscription, :as => :subscriber, :dependent => :destroy)
-      Subscriber.send(:acts_as_subscriber)
-    end
+describe FakeUser, 'class' do
+  it "should define polymorphic subscription association with dependency" do
+    FakeUser.should_receive(:has_one).with(:subscription, :as => :subscriber, :dependent => :destroy)
+    FakeUser.send(:acts_as_subscriber)
   end
 
   it "should validate the associated subscription" do
-    Subscriber.should_receive(:validates_associated).with(:subscription)
-    Subscriber.send(:acts_as_subscriber)
+    FakeUser.should_receive(:validates_associated).with(:subscription)
+    FakeUser.send(:acts_as_subscriber)
   end
 end
 
-describe Subscriber, 'instance' do
-  let(:subscriber) { Subscriber.send(:acts_as_subscriber); Subscriber.new }
+describe FakeUser, 'instance' do
+  let(:subscriber) { FakeUser.send(:acts_as_subscriber); FakeUser.new }
   let(:plan) { (plan = SubscriptionPlan.new(:name => 'Gold')).tap { plan.stub!(:save).and_return(true) } }
   let(:subscription) { (subscription = Subscription.new).tap { subscription.stub!(:save).and_return(true); subscription.stub!(:plan).and_return(plan) } }
 
