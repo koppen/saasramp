@@ -15,7 +15,7 @@ module Saasramp           #:nodoc:
             has_one :subscription, :as => :subscriber, :dependent => :destroy
           end
           validates_associated :subscription
-          
+
           include Saasramp::Acts::Subscriber::InstanceMethods
           extend Saasramp::Acts::Subscriber::SingletonMethods
         end
@@ -36,8 +36,18 @@ module Saasramp           #:nodoc:
  		        when plan.to_i > 0:                 SubscriptionPlan.find_by_id(plan)
  		        else                                SubscriptionPlan.find_by_name(plan)
  		      end
- 		      # not just change the attribute, really switch plans
- 		      subscription.change_plan @newplan unless subscription.nil?
+
+          if subscription.nil?
+            # Make sure we have a subscription. The actual changing plan to @newplan is handled in
+            # after_save, because changing the plan causes AASM to save the record, and it's a bit
+            # premature to save here.
+            self.build_subscription
+          else
+            # not just change the attribute, really switch plans
+            subscription.change_plan @newplan
+          end
+
+          return subscription_plan
   			end
 
         def subscription_plan
@@ -69,10 +79,8 @@ module Saasramp           #:nodoc:
         def after_save
           # this is the best time to create the subscription
           # because cannot build_subscription while self.id is still nil
-          if subscription.nil?
-            self.create_subscription
-            self.subscription.change_plan @newplan if @newplan
-          end
+          self.create_subscription if subscription.nil?
+          self.subscription.change_plan @newplan if @newplan
         end
       end
       

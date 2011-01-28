@@ -258,7 +258,7 @@ class Subscription < ActiveRecord::Base
       # start or continue a trial? prorate since creation
       #when active?    :
     else
-          d = created_at.to_date + SubscriptionConfig.trial_period.days
+          d = (created_at || Time.now).to_date + SubscriptionConfig.trial_period.days
                            d unless d <= Time.zone.today
       # else nil not eligable
     end

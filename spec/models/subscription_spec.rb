@@ -233,8 +233,8 @@ describe Subscription do
   # -------------------------
   describe "check plan" do    
     it "checks if exceeds current plan" do
-      @plan = SubscriptionPlan.create( :name => 'basic', :rate_cents => 1000 )      
-      @subscriber = create_subscriber( :subscription_plan => @plan )
+      @plan = SubscriptionPlan.create( :name => 'basic', :rate_cents => 1000 )
+      @subscriber = create_subscriber(:subscription_plan => @plan)
       @subscription = @subscriber.subscription
       @subscription.subscriber.should_receive(:subscription_plan_check).with(@plan).and_return("exceeded limits")
   

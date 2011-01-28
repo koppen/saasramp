@@ -59,9 +59,15 @@ describe FakeUser, 'instance' do
       end
     end
 
-    it "should not attempt to change the plan" do
-      subscription.should_receive(:change_plan).never
-      subscriber.subscription_plan = plan
+    context "when subscriber does not have a subscription" do
+      before :each do
+        subscriber.stub!(:subscription).and_return(nil)
+      end
+
+      it "should create a Subscription in memory" do
+        subscriber.should_receive(:build_subscription)
+        subscriber.subscription_plan = plan
+      end
     end
 
     context "when subscriber has a subscription" do
