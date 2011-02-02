@@ -322,6 +322,7 @@ describe Subscription do
     describe "when past due" do
       before :each do
         @subscription = create_subscription( :plan => @plan )
+        @subscription.warning_level = 1
         @subscription.created_at = @today - 1.year 
         @subscription.next_renewal_on = @today - 6.days
         @subscription.state = 'past_due'
@@ -484,5 +485,26 @@ describe Subscription do
       end
     end
   end
-  
-end   
+
+  describe "state transitions" do
+    before :each do
+      @subscription = create_subscription(:plan => @plan)
+      @subscription.warning_level = 2
+    end
+
+    context "when changing to a different state" do
+      it "should reset the warning level" do
+        @subscription.expired
+        @subscription.warning_level.should be_nil
+      end
+    end
+
+    context "when changing to the same state" do
+      it "should not reset the warning level" do
+        @subscription.free
+        @subscription.warning_level.should_not be_nil
+      end
+    end
+  end
+
+end
