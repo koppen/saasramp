@@ -31,5 +31,9 @@ class SubscriptionPlan < ActiveRecord::Base
     default_plan ||= SubscriptionPlan.first( :conditions => { :rate_cents => 0 })
     default_plan ||= SubscriptionPlan.create( :name => 'free' ) #bootstrapper and tests
   end
-  
+
+  def to_s
+    name
+  end
+
 end
