@@ -1,9 +1,9 @@
 require File.dirname(__FILE__) + '/../spec_helper'
-unless ActiveRecord::Base.observers.include? :subscription_observer
-  puts "Cannot run specs on SubscriptionObserver. Please add the following to environment.rb"
-  puts "  config.active_record.observers = :subscription_observer"
+unless ActiveRecord::Base.observers.include? :subscription_transaction_observer
+  puts "Cannot run specs on SubscriptionTransactionObserver. Please add the following to environment.rb"
+  puts "  config.active_record.observers = :subscription_transaction_observer"
 else
-describe SubscriptionObserver do
+describe SubscriptionTransactionObserver do
   before :all do
     ActiveRecord::Observer.allow_peeping_toms = true if ActiveRecord::Observer.respond_to?(:allow_peeping_toms)
   end

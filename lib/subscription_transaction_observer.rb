@@ -1,10 +1,9 @@
 # use this observer to send out email notifications when transactions are saved
 # unclutters the models and ensures users get notified whenever their credit card is accessed
-# tracks warning levels so the same message isnt duplicated, 
-# and handles when subscription is expired (move that out of here? but we did try to charge the card one last time)
-# Install in environment.rb config.active_record.observers = :subscription_observer
+# tracks warning levels so the same message isnt duplicated,.
+# Install in environment.rb config.active_record.observers = :subscription_transaction_observer
 
-class SubscriptionObserver < ActiveRecord::Observer
+class SubscriptionTransactionObserver < ActiveRecord::Observer
   observe :subscription_transaction
   
   def after_save(transaction)

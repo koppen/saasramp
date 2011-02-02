@@ -54,7 +54,7 @@ Subscription transaction model
 - Wraps ActiveMerchant, unifying inconsistent gateway api
 - Handles exceptions and gateway responses
 
-Subscription observer and mailer
+Subscription Transaction observer and mailer
 - observe transactions to send out email notifications as needed
 - email delivery issued from one file, un-clutters the models
 - includes mailer templates you can use or change
@@ -133,7 +133,7 @@ If you already have subscribers in your database (e.g. User or Account records),
 	$ ./script/generate saas_scaffold
 
 === Optionally, add email notification observers, in environment.rb
-	config.active_record.observers = :subscription_observer
+	config.active_record.observers = :subscription_transaction_observer
 	
 === Optionally, create your own mailer, using the SubscriptionMailer and templates as an example
 and modify subscription.yml with your mailer class name
@@ -194,7 +194,7 @@ Review the rake task (tasks/saasramp_tasks.rake) and make sure the business logi
 	
 You can re-run the task multiple times a day without fear of accidental duplicate billings or notification emails.
 
-Remember that email notifications are sent not by the rake task but through the SubscriptionObserver whenever a SubscriptionTransaction is created. You can modify that behavior by editing the subscription_observer.rb file, or simply not enabling the observer in your environment.rb.
+Remember that email notifications are sent not by the rake task but through the SubscriptionTransactionObserver whenever a SubscriptionTransaction is created. You can modify that behavior by editing the subscription_transaction_observer.rb file, or simply not enabling the observer in your environment.rb.
 
 To setup recurring billing on your server, use a cron tab manager to run the task, for example,
 
