@@ -204,7 +204,17 @@ To setup from the command line to run every day at 3am, for example:
 
 	$ echo "0  3  *  *  *  cd ~/myapp && rake saas:daily RAILS_ENV=production" > daily.txt
 	$ crontab daily.txt
-	
+
+== Customizing subscription flow
+
+If you want to further customize how Saasramp subscriptions are act, the recommended way to do so, is to create your own subscription model and include Saasramps subscription methods into it:
+
+  class Subscription < ActiveRecord::Base
+    include Saasramp::Subscription
+  end
+
+This allows you to define callbacks on the subscription or in an observer.
+
 == Test the plugin
 
 Uses RSpec, which requires a dummy app to run the specs.
