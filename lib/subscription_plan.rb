@@ -21,7 +21,7 @@ class SubscriptionPlan < ActiveRecord::Base
     total_days = interval * 30
     daily_rate = rate_cents.to_f / total_days
     # round down to penny
-    Money.new( (days * daily_rate).to_i, SubscriptionConfig.currency)
+    Money.new([(days * daily_rate).to_i, rate_cents].min, SubscriptionConfig.currency)
   end
   
   # ---------------

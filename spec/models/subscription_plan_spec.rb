@@ -28,6 +28,8 @@ describe SubscriptionPlan do
     @basic.prorated_value(30).should == @basic.rate
     @basic.prorated_value(0).should == Money.new(0, "EUR")
     @basic.prorated_value(10).should == @basic.rate / 3
+    @basic.prorated_value(31).should == @basic.rate
+    @basic.prorated_value(53).should == @basic.rate
   end
   
 end
