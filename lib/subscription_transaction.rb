@@ -14,6 +14,7 @@ class SubscriptionTransaction < ActiveRecord::Base
   
   # find recent 'charge' transactions that are greater or equal to amount
   named_scope :charges_at_least, lambda {|amount|
+    amount = Money.new(amount, SubscriptionConfig.currency) unless amount.respond_to?(:cents)
     { :conditions => ["action = ? AND amount_cents >= ?", 'charge', amount.cents],
       :order => "created_at DESC" }
   }

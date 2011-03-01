@@ -26,6 +26,25 @@ describe SubscriptionTransaction do
   # it "has the transaction type"
   # it "keeps the raw response"
   # it "has timestamps"
+  describe "charges_at_least" do
+    let(:subscriber) { create_subscriber }
+
+    {:zero => 0, :ten => 10, :fourty_two => 42}.each do |name, amount|
+      let(name) { SubscriptionTransaction.create!(:subscription_id => subscriber.id, :success => true, :action => 'charge', :amount => Money.new(amount * 100)) }
+    end
+
+    before :each do
+      transactions = [zero, ten, fourty_two]
+    end
+
+    it "should accept amount as cents" do
+      SubscriptionTransaction.charges_at_least(500).should == [ten, fourty_two]
+    end
+
+    it "should accept amount as Money" do
+      SubscriptionTransaction.charges_at_least(Money.new(1200)).should == [fourty_two]
+    end
+  end
 
   # -------------------------
   describe "validate_card" do
