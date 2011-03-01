@@ -193,52 +193,97 @@ describe SubscriptionTransaction do
   
   # -------------------------
   describe "credit amount" do
-    before :each do
-      @amount = 2500
-    end
-    
-    it "successfully credits amount" do
-      profile_key = '1'
-      result = SubscriptionTransaction.credit( @amount, profile_key )
-      result.should be_success
-      result.action.should == 'credit'
-      result.amount_cents.should == @amount
-      result.message.should == BogusGateway::SUCCESS_MESSAGE
+    let(:amount) { 2500 }
+
+    context "when gateway requires a transaction to credit against" do
+      class ActiveMerchant::Billing::RefundingGateway < BogusGateway
+        def refund(*args)
+          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => 42}, :test => true)
+        end
+      end
+
+      let(:subscription) { create_subscription }
+      let(:success_profile_key) { '1' }
+      let(:success_transaction) { SubscriptionTransaction.new(:reference => "foobar") }
+      let(:success_response) { Response.new(true, BogusGateway::SUCCESS_MESSAGE, {:paid_amount => 42}, :test => true) }
+      let(:gateway) { SubscriptionConfig.gateway }
+
+      before :each do
+        SubscriptionConfig.gateway = ActiveMerchant::Billing::Base.gateway(:refunding).new
+        SubscriptionConfig.gateway.should be_instance_of(RefundingGateway)
+        SubscriptionConfig.mailer.stub!(:deliver_credit_success).and_return(true)
+
+        subscription.transactions.success.stub!(:charges_at_least).with(amount).and_return([success_transaction])
+      end
+
+      def do_credit
+        SubscriptionTransaction.credit(amount, success_profile_key, :subscription => subscription)
+      end
+
+      context "and a successful charge for more than amount exists" do
+        before :each do
+          SubscriptionTransaction.create!(:subscription_id => subscription.id, :success => true, :action => 'charge', :amount => Money.new(3000), :reference => "foobar")
+        end
+
+        it "uses refund" do
+          result = do_credit
+          result.should be_success
+          result.amount_cents.should == amount
+          result.action.should == 'refund'
+          result.message.should == BogusGateway::SUCCESS_MESSAGE
+        end
+
+        it "finds a recent charge" do
+          transactions = [success_transaction]
+          subscription.transactions.should_receive(:success).and_return(transactions)
+          transactions.should_receive(:charges_at_least).with(amount).and_return(transactions)
+          result = do_credit
+        end
+
+        it "refunds against that charge" do
+          gateway.should_receive(:refund).with(amount, success_transaction.reference).and_return(success_response)
+          result = do_credit
+        end
+      end
     end
 
-    it "successfully credit amount in Money" do
-      @money = Money.new(@amount)
-      profile_key = '1'
-      result = SubscriptionTransaction.credit( @money, profile_key )
-      result.should be_success
-      result.action.should == 'credit'
-      result.amount_cents.should == @amount
-      result.message.should == BogusGateway::SUCCESS_MESSAGE
+    context "when gateway does not require a transaction to credit against" do
+      it "successfully credits amount" do
+        profile_key = '1'
+        result = SubscriptionTransaction.credit( amount, profile_key )
+        result.should be_success
+        result.action.should == 'credit'
+        result.amount_cents.should == amount
+        result.message.should == BogusGateway::SUCCESS_MESSAGE
+      end
+
+      it "successfully credit amount in Money" do
+        @money = Money.new(amount)
+        profile_key = '1'
+        result = SubscriptionTransaction.credit( @money, profile_key )
+        result.should be_success
+        result.action.should == 'credit'
+        result.amount_cents.should == amount
+        result.message.should == BogusGateway::SUCCESS_MESSAGE
+      end
+
+      it "fails to credit" do
+        profile_key = '2'
+        result = SubscriptionTransaction.credit( amount, profile_key )
+        result.should_not be_success
+        result.action.should == 'credit'
+        result.amount_cents.should == amount
+        result.message.should == BogusGateway::FAILURE_MESSAGE
+      end
+
+      it "gets exception during credit" do
+        profile_key = '3'
+        result = SubscriptionTransaction.credit( amount, profile_key )
+        result.should_not be_success
+        result.action.should == 'credit'
+        result.amount_cents.should == amount
+        result.message.should == BogusGateway::ERROR_MESSAGE
+      end
     end
-  
-    it "fails to credit" do
-      profile_key = '2'
-      result = SubscriptionTransaction.credit( @amount, profile_key )
-      result.should_not be_success
-      result.action.should == 'credit'
-      result.amount_cents.should == @amount
-      result.message.should == BogusGateway::FAILURE_MESSAGE
-    end
-    
-    it "gets exception during credit" do
-      profile_key = '3'
-      result = SubscriptionTransaction.credit( @amount, profile_key )
-      result.should_not be_success
-      result.action.should == 'credit'
-      result.amount_cents.should == @amount
-      result.message.should == BogusGateway::ERROR_MESSAGE
-    end
-    
-    # TODO
-    # describe "as refund" do
-    #   it "uses refund when gateway doesnt support credit"
-    #   it "finds a recent charge"
-    #   it "refunds against that charge"
-    # end
   end
 end

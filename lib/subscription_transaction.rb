@@ -18,6 +18,7 @@ class SubscriptionTransaction < ActiveRecord::Base
     { :conditions => ["action = ? AND amount_cents >= ?", 'charge', amount.cents],
       :order => "created_at DESC" }
   }
+  named_scope :success, {:conditions => {:success => true}}
   
   class << self
     # note, according to peepcode pdf, many gateways require a unique order_id on each transaction
@@ -107,19 +108,21 @@ class SubscriptionTransaction < ActiveRecord::Base
     def credit( amount, profile_key, options = {})
       #debugger
       options[:order_id] ||= unique_order_number
-      if SubscriptionConfig.gateway.respond_to?(:credit)
-        process( 'credit', amount) do |gw|
-          gw.credit( amount, profile_key, options )
+      if SubscriptionConfig.gateway.respond_to?(:refund)
+
+        # Gateway needs a previous charge (by this subscriber!) to refund against
+        subscription = options[:subscription]
+        tx = subscription.transactions.success.charges_at_least(amount).first
+        if tx
+          process('refund', amount) do |gw|
+            # note, syntax follows void 
+            gw.refund(amount, tx.reference)
+          end
         end
       else
-        # need to refund against a previous charge (by this subscriber!)
-        subscription = options[:subscription]
-        tx = subscription.transactions.charges_at_least( amount ).first
-        if tx
-          process( 'refund', amount ) do |gw|
-            # note, syntax follows void 
-            gw.refund( tx.reference, options.merge(:amount => amount) )
-          end
+        # Gateway supports arbitrary credits
+        process('credit', amount) do |gw|
+          gw.credit(amount, profile_key, options)
         end
       end
     end

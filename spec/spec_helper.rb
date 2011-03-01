@@ -6,7 +6,7 @@ rescue LoadError
 end
 # use rspec mocks
 Spec::Runner.configure do |config|
-  config.mock_with nil
+  config.mock_with :rspec
 end
 
 plugin_spec_dir = File.dirname(__FILE__)
