@@ -12,7 +12,7 @@ class SubscriptionMailer < ActionMailer::Base
   end
   
   def charge_failure(subscription, transaction = nil)
-    setup_email(subscription)
+    setup_email(subscription, transaction)
     @subject += "Billing error" 
   end      
   
