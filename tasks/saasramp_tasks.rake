@@ -51,7 +51,10 @@ namespace :saas do
       
       # renew subscriptions that are due now
       Subscription.with_states(:trial, :active).due_now.each do |sub| 
-        sub.renew
+        unless sub.renew
+          # Make sure we send out second_charge_failure in 3 days time
+          sub.update_attribute(:warning_level, 1)
+        end
       end
 
       # try past due after a couple days
