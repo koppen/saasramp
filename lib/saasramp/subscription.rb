@@ -100,8 +100,17 @@ module Saasramp
         return nil unless due?
         transaction do # makes this atomic
           #debugger
-          # adjust current balance (except for re-tries)
-          self.balance += plan.rate unless past_due?
+
+          if has_profile?
+            # adjust current balance (except for re-tries)
+            self.balance += plan.rate unless past_due?
+          else
+            # Subscriber doesn't have credit card details so we can't possibly charge them. Don't
+            # even try, just make the subscription past_due and notify the subscriber
+            past_due
+            notify_subscriber_of_charge_failure!
+            return false
+          end
 
           # charge the amount due
           
@@ -196,12 +205,21 @@ module Saasramp
       # warning_level accordingly.
       def notify_subscriber_of_charge_failure!(transaction = nil)
         self.increment!(:warning_level)
+
+        # Don't notify subscriber if it'll result in an error
+        return unless self.subscriber && self.subscriber.respond_to?(:email) && self.subscriber.email.present?
+
         case self.warning_level
         when 1
           SubscriptionConfig.mailer.deliver_charge_failure(self)
         when 2
           SubscriptionConfig.mailer.deliver_second_charge_failure(self)
         end
+      end
+
+      # Returns true if Subscription has credit card details
+      def has_profile?
+        profile.present? && !profile.no_info? && profile.profile_key.present?
       end
 
       # charge the current balance against the subscribers credit card
@@ -212,7 +230,7 @@ module Saasramp
         return if balance_cents <= 0
 
         # no card on file
-        if profile.no_info? || profile.profile_key.nil?
+        unless has_profile?
           notify_subscriber_of_charge_failure!
           return false
         end

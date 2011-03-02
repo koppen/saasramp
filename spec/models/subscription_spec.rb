@@ -84,13 +84,13 @@ describe Subscription do
       @subscription.renew
       @subscription.should be_active
     end
-    
+
     it "updates next renewal to one month from when subscription ran out if charge transaction success" do
       # assumes plan interval is one month
       @subscription.renew
       @subscription.next_renewal_on.should == (@today + 1.month)
     end
-    
+
     describe 'transaction fails' do
       before :each do
         SubscriptionTransaction.stub!(:charge).and_return(SubscriptionTransaction.new(:success => false))
@@ -107,6 +107,23 @@ describe Subscription do
       it "does not change renewal date" do
         @subscription.renew
         @subscription.next_renewal_on.should == @today
+      end
+    end
+
+    context "when user has no card on file" do
+      before :each do
+        @subscription.profile.state = 'no_info'
+      end
+
+      it "should not attempt to charge" do
+        @subscription.should_receive(:charge_balance).never
+        @subscription.renew
+      end
+
+      it "should not change balance" do
+        @subscription.balance = Money.new(0, SubscriptionConfig.currency)
+        @subscription.renew
+        @subscription.balance.should == Money.new(0, SubscriptionConfig.currency)
       end
     end
   end
