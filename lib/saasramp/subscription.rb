@@ -104,6 +104,9 @@ module Saasramp
           self.balance += plan.rate unless past_due?
 
           # charge the amount due
+          
+          # charge_balance returns false if user has no profile.
+          # It also creates the SubscriptionTransaction that triggers the email delivery
           case charge = charge_balance
 
           # transaction failed: past due and return false
@@ -189,14 +192,30 @@ module Saasramp
         subscriber.subscription_plan_check(plan)
       end
 
+      # Delivers the [second_]charge_failure emails to the subscriber and increments the
+      # warning_level accordingly.
+      def notify_subscriber_of_charge_failure!(transaction = nil)
+        self.increment!(:warning_level)
+        case self.warning_level
+        when 1
+          SubscriptionConfig.mailer.deliver_charge_failure(self)
+        when 2
+          SubscriptionConfig.mailer.deliver_second_charge_failure(self)
+        end
+      end
+
       # charge the current balance against the subscribers credit card
       # return amount charged on success, false for failure, nil for nothing happened
       def charge_balance
         #debugger
         # nothing to charge? (0 or a credit)
         return if balance_cents <= 0
-        # no cc on fle
-        return false if profile.no_info? || profile.profile_key.nil?
+
+        # no card on file
+        if profile.no_info? || profile.profile_key.nil?
+          notify_subscriber_of_charge_failure!
+          return false
+        end
 
         transaction do # makes this atomic
           #debugger

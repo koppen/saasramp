@@ -14,18 +14,9 @@ class SubscriptionTransactionObserver < ActiveRecord::Observer
       if transaction.success?
         SubscriptionConfig.mailer.deliver_charge_success(sub, transaction) if send_mail
       else 
-        sub.increment!(:warning_level)
-        case sub.warning_level
-        when 1
-          SubscriptionConfig.mailer.deliver_charge_failure(sub, transaction) if send_mail
-        when 2
-          SubscriptionConfig.mailer.deliver_second_charge_failure(sub, transaction) if send_mail
-        else
-          # expired: do in the app whatever it means to become expired
-          # send no mail here
-        end
+        sub.notify_subscriber_of_charge_failure!(transaction)
       end
-      
+
     when 'credit', 'refund'
       if transaction.success?
         SubscriptionConfig.mailer.deliver_credit_success(sub, transaction) if send_mail

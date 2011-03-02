@@ -11,12 +11,12 @@ class SubscriptionMailer < ActionMailer::Base
     @subject += "Service invoice"
   end
   
-  def charge_failure(subscription, transaction)
-    setup_email(subscription, transaction)
+  def charge_failure(subscription, transaction = nil)
+    setup_email(subscription)
     @subject += "Billing error" 
   end      
   
-  def second_charge_failure(subscription, transaction)
+  def second_charge_failure(subscription, transaction = nil)
     setup_email(subscription, transaction)
     @subject += "Second notice: Your subscription is set to expire"
   end

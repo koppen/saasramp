@@ -365,55 +365,95 @@ describe Subscription do
     before :each do
       create_subscriber_with_subscription_1500
     end
-    
-    it "returns nil if zero balance" do
-      @subscription.update_attribute :balance_cents, 0
-      @subscription.charge_balance.should be_nil
-    end
-    it "returns false if no cc info" do
-      @subscription.profile.state = 'no_info'
-      @subscription.charge_balance.should be_false
-    end
-    it "returns amount charged if successful" do
-      @subscription.charge_balance.should == Money.new(1500, "EUR")
-    end
-    
-    it "charges against balance" do
-      @subscription.charge_balance
-      @subscription.balance_cents.should == 0
-    end
-    
-    it "charges credit card" do
-      SubscriptionTransaction.should_receive(:charge).with(Money.new(1500, "EUR"), anything).and_return( SubscriptionTransaction.new(:success => true ))
-      @subscription.charge_balance
-    end
-    
-    it "saves the transaction" do
-      SubscriptionTransaction.should_receive(:charge).and_return( SubscriptionTransaction.new(:success => true ))
-      @subscription.charge_balance
-      @subscription.transactions.count.should == 1
-    end
-    
-    it "sets profile state to :authorized" do
-      @subscription.profile.state = 'error'
-      @subscription.charge_balance
-      @subscription.profile.should be_authorized
-    end
-    
-    describe "transaction fails" do
+
+    context "when subscriber has no profile info" do
       before :each do
-        SubscriptionTransaction.should_receive(:charge).and_return( SubscriptionTransaction.new(:success => false ))
+        @subscription.profile.state = 'no_info'
       end
-      it "returns false on error" do
+
+      it "returns false" do
         @subscription.charge_balance.should be_false
       end
-      it "sets profile state to :error" do
-        @subscription.charge_balance
-        @subscription.profile.should be_error
+
+      context "when warning level is nil" do
+        before :each do
+          @subscription.warning_level = nil
+        end
+
+        it "increments warning level" do
+          @subscription.charge_balance
+          @subscription.warning_level.should == 1
+        end
+
+        it "notifies the user" do
+          SubscriptionConfig.mailer.should_receive(:deliver_charge_failure)
+          @subscription.charge_balance
+        end
       end
-      it "does not change balance" do
+
+      context "when warning level is 1" do
+        before :each do
+          @subscription.warning_level = 1
+        end
+
+        it "increments warning level" do
+          @subscription.charge_balance
+          @subscription.warning_level.should == 2
+        end
+
+        it "notifies the user" do
+          SubscriptionConfig.mailer.should_receive(:deliver_second_charge_failure)
+          @subscription.charge_balance
+        end
+      end
+    end
+
+    context "when subscriber has profile info" do
+      it "returns nil if zero balance" do
+        @subscription.update_attribute :balance_cents, 0
+        @subscription.charge_balance.should be_nil
+      end
+      it "returns amount charged if successful" do
+        @subscription.charge_balance.should == Money.new(1500, "EUR")
+      end
+    
+      it "charges against balance" do
         @subscription.charge_balance
-        @subscription.balance_cents.should == 1500
+        @subscription.balance_cents.should == 0
+      end
+    
+      it "charges credit card" do
+        SubscriptionTransaction.should_receive(:charge).with(Money.new(1500, "EUR"), anything).and_return( SubscriptionTransaction.new(:success => true ))
+        @subscription.charge_balance
+      end
+    
+      it "saves the transaction" do
+        SubscriptionTransaction.should_receive(:charge).and_return( SubscriptionTransaction.new(:success => true ))
+        @subscription.charge_balance
+        @subscription.transactions.count.should == 1
+      end
+    
+      it "sets profile state to :authorized" do
+        @subscription.profile.state = 'error'
+        @subscription.charge_balance
+        @subscription.profile.should be_authorized
+      end
+    
+      describe "transaction fails" do
+        before :each do
+          SubscriptionTransaction.should_receive(:charge).and_return( SubscriptionTransaction.new(:success => false ))
+        end
+        it "returns false on error" do
+          @subscription.charge_balance.should be_false
+        end
+        it "sets profile state to :error" do
+          @subscription.charge_balance
+          @subscription.profile.should be_error
+        end
+        it "does not change balance" do
+          @subscription.charge_balance
+          @subscription.balance_cents.should == 1500
+        end
       end
     end
   end
