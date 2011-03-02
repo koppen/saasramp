@@ -120,10 +120,10 @@ describe Subscription do
         @subscription.renew
       end
 
-      it "should not change balance" do
+      it "should increase balance so we know what to charge on retries" do
         @subscription.balance = Money.new(0, SubscriptionConfig.currency)
         @subscription.renew
-        @subscription.balance.should == Money.new(0, SubscriptionConfig.currency)
+        @subscription.balance.should == Money.new(1000, SubscriptionConfig.currency)
       end
     end
   end

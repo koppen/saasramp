@@ -101,10 +101,10 @@ module Saasramp
         transaction do # makes this atomic
           #debugger
 
-          if has_profile?
-            # adjust current balance (except for re-tries)
-            self.balance += plan.rate unless past_due?
-          else
+          # adjust current balance (except for re-tries)
+          self.balance += plan.rate unless past_due?
+
+          unless has_profile?
             # Subscriber doesn't have credit card details so we can't possibly charge them. Don't
             # even try, just make the subscription past_due and notify the subscriber
             past_due
