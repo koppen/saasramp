@@ -95,7 +95,7 @@ module Saasramp
       end
 
       # returns nil if not past due, false for failed, true for success, or amount charged for success when card was charged
-      def renew
+      def renew(options = {})
         # make sure it's time
         return nil unless due?
         transaction do # makes this atomic
@@ -113,10 +113,13 @@ module Saasramp
           end
 
           # charge the amount due
-          
+
+          # Ask the plan for a human readable description of the transaction
+          description = self.plan.description_for_renewal_charge if self.plan.respond_to?(:description_for_renewal_charge)
+
           # charge_balance returns false if user has no profile.
           # It also creates the SubscriptionTransaction that triggers the email delivery
-          case charge = charge_balance
+          case charge = charge_balance({:description => description}.merge(options))
 
           # transaction failed: past due and return false
           when false:   past_due && false
@@ -224,7 +227,8 @@ module Saasramp
 
       # charge the current balance against the subscribers credit card
       # return amount charged on success, false for failure, nil for nothing happened
-      def charge_balance
+      def charge_balance(options = {})
+        options.symbolize_keys!
         #debugger
         # nothing to charge? (0 or a credit)
         return if balance_cents <= 0
@@ -239,6 +243,7 @@ module Saasramp
           #debugger
           # charge the card
           tx  = SubscriptionTransaction.charge( balance, profile.profile_key )
+          tx.description = options[:description] unless options[:description].blank?
           # save the transaction
           transactions.push( tx )
           # set profile state and reset balance

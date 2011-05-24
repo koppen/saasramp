@@ -68,7 +68,6 @@ namespace :saas do
           # expired subscriptions change to a free plan and change state to 'expired'
           # (your app may also do other things on expire)
           sub.expired
-          SubscriptionConfig.mailer.deliver_subscription_expired(sub)
         end
       end
       
