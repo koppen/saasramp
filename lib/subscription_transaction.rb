@@ -108,10 +108,9 @@ class SubscriptionTransaction < ActiveRecord::Base
     def credit( amount, profile_key, options = {})
       #debugger
       options[:order_id] ||= unique_order_number
-      if SubscriptionConfig.gateway.respond_to?(:refund) && options[:subscription]
+      if SubscriptionConfig.gateway.respond_to?(:refund) && subscription = options[:subscription]
 
         # Gateway needs a previous charge (by this subscriber!) to refund against
-        subscription = options[:subscription]
         tx = subscription.transactions.success.charges_at_least(amount).first
         if tx
           process('refund', amount) do |gw|
