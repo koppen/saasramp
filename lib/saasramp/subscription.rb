@@ -321,14 +321,14 @@ module Saasramp
         return if SubscriptionConfig.trial_period.to_i==0
         case 
           # in trial, days remaining
-          when trial?     :    next_renewal_on 
+          when trial?     :    next_renewal_on
           # new record? would start from today
           when plan.nil?  :    Time.zone.today + SubscriptionConfig.trial_period.days
           # start or continue a trial? prorate since creation
           #when active?    :
         else
-              d = (created_at || Time.now).to_date + SubscriptionConfig.trial_period.days
-                               d unless d <= Time.zone.today
+          d = (created_at || Time.now).to_date + SubscriptionConfig.trial_period.days
+          d unless d <= Time.zone.today
           # else nil not eligable
         end
       end

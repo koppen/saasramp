@@ -35,8 +35,15 @@ describe Subscription do
   end
   
   describe "create with paid plan and no trial" do
-    before :each do
+    before :all do
+      @old_trial_period = SubscriptionConfig.trial_period
       SubscriptionConfig.trial_period = 0
+    end
+    after :all do
+      SubscriptionConfig.trial_period = @old_trial_period
+    end
+
+    before :each do
       @plan = SubscriptionPlan.create( :name => 'basic', :rate_cents => 1000, :interval => 3)
       @subscription = create_subscription( :plan => @plan )
     end
@@ -51,8 +58,15 @@ describe Subscription do
   
   # -------------------------
   describe "renew" do
-    before :each do
+    before :all do
+      @old_trial_period = SubscriptionConfig.trial_period
       SubscriptionConfig.trial_period = 0
+    end
+    after :all do
+      SubscriptionConfig.trial_period = @old_trial_period
+    end
+
+    before :each do
       SubscriptionTransaction.stub!(:charge).and_return(SubscriptionTransaction.new(:success => true))
       @plan = SubscriptionPlan.create( :name => 'basic', :rate_cents => 1000, :interval => 1)      
       @subscription = create_subscription( :plan => @plan )
@@ -316,23 +330,27 @@ describe Subscription do
     end
     
     describe "when in trial" do
+      let(:plan) { SubscriptionPlan.create( :name => 'basic', :rate_cents => 1000, :interval => 1) }
+      let(:new_plan) { SubscriptionPlan.create( :name => 'pro', :rate_cents => 2000, :interval => 1) }
+      let(:subscription) { create_subscription( :plan => plan ) }
+
       before :each do
-        @subscription = create_subscription( :plan => @plan )
-        @subscription.next_renewal_on = @today + 6.days
-        @subscription.state = 'trial'
+        subscription.next_renewal_on = @today + 6.days
+        subscription.state = 'trial'
       end
+
       it "sets new plan" do
-        @subscription.change_plan( @new_plan )
-        @subscription.plan.should == @new_plan
+        subscription.change_plan( new_plan )
+        subscription.plan.should == new_plan
       end
       it "still in trial" do
-        @subscription.change_plan( @new_plan )
-        @subscription.should be_trial
+        subscription.change_plan( new_plan )
+        subscription.should be_trial
       end
       it "keeps trial end date" do
-        days = @subscription.days_remaining
-        @subscription.change_plan( @new_plan )
-        @subscription.days_remaining.should == days
+        days = subscription.days_remaining
+        subscription.change_plan( new_plan )
+        subscription.days_remaining.should == days
       end
     end
 
