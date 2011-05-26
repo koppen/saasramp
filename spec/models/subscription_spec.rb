@@ -493,6 +493,79 @@ describe Subscription do
     end
   end
   
+  describe "charge_card" do
+    let(:money) { Money.new(1500, 'EUR') }
+    let(:subscription) { @subscription }
+
+    before :each do
+      create_subscriber_with_subscription_1500
+    end
+
+    context "when subscriber has no profile info" do
+      before :each do
+        subscription.profile.state = 'no_info'
+      end
+
+      it "returns false" do
+        subscription.charge_card(money).should be_false
+      end
+    end
+
+    context "when subscriber has profile info" do
+      it "returns amount charged if successful" do
+        subscription.charge_card(money).should == money
+      end
+
+      it "doesn't charge against balance" do
+        old_balance_cents = subscription.balance_cents
+        subscription.charge_card(money)
+        subscription.balance_cents.should == old_balance_cents
+      end
+
+      context "when transaction is successful" do
+        before :each do
+          SubscriptionTransaction.stub!(:charge).with(money, anything).and_return(SubscriptionTransaction.new(:success => true))
+        end
+
+        it "charges credit card" do
+          SubscriptionTransaction.should_receive(:charge).with(money, anything).and_return(SubscriptionTransaction.new(:success => true))
+          subscription.charge_card(money)
+        end
+
+        it "saves the transaction" do
+          subscription.charge_card(money)
+          subscription.transactions.count.should == 1
+        end
+
+        it "saves the description" do
+          subscription.charge_card(money, {:description => '2 pieces of good stuff'})
+          subscription.transactions.count.should == 1
+        end
+
+        it "sets profile state to :authorized" do
+          @subscription.profile.state = 'error'
+          @subscription.charge_card(money)
+          @subscription.profile.should be_authorized
+        end
+      end
+
+      context "transaction fails" do
+        before :each do
+          SubscriptionTransaction.should_receive(:charge).and_return(SubscriptionTransaction.new(:success => false))
+        end
+
+        it "returns false on error" do
+          subscription.charge_card(money).should be_false
+        end
+
+        it "sets profile state to :error" do
+          subscription.charge_card(money)
+          subscription.profile.should be_error
+        end
+      end
+    end
+  end
+
   # -------------------------
   describe "payment_received" do
     before :each do

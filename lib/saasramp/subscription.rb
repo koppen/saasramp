@@ -114,7 +114,7 @@ module Saasramp
 
           # charge the amount due
 
-          # Ask the plan for a human readable description of the transaction
+          # Create a human readable description of the transaction
           description = self.plan.description_for_renewal_charge if self.plan.respond_to?(:description_for_renewal_charge)
 
           # charge_balance returns false if user has no profile.
@@ -225,11 +225,32 @@ module Saasramp
         profile.present? && !profile.no_info? && profile.profile_key.present?
       end
 
+      # Charge amount against the subscribers credit card.
+      # Return amount charged on success, false for failure, nil for nothing happened
+      def charge_card(amount, options = {})
+        return false unless has_profile?
+
+        transaction do # makes this atomic
+          tx = SubscriptionTransaction.charge(amount, profile.profile_key)
+          tx.description = options[:description] unless options[:description].blank?
+          transactions.push(tx) # saves the transaction
+
+          # set profile state and reset balance
+          if tx.success
+            profile.authorized
+          else
+            profile.error
+          end
+          tx.success && tx.amount
+        end
+      end
+
+
       # charge the current balance against the subscribers credit card
       # return amount charged on success, false for failure, nil for nothing happened
       def charge_balance(options = {})
         options.symbolize_keys!
-        #debugger
+
         # nothing to charge? (0 or a credit)
         return if balance_cents <= 0
 
@@ -239,22 +260,10 @@ module Saasramp
           return false
         end
 
-        transaction do # makes this atomic
-          #debugger
-          # charge the card
-          tx  = SubscriptionTransaction.charge( balance, profile.profile_key )
-          tx.description = options[:description] unless options[:description].blank?
-          # save the transaction
-          transactions.push( tx )
-          # set profile state and reset balance
-          if tx.success
-            self.update_attribute :balance_cents, 0
-            profile.authorized
-          else
-            profile.error
-          end
-          tx.success && tx.amount
+        if amount_charged = charge_card(balance, options)
+          update_attribute(:balance_cents, 0)
         end
+        return amount_charged
       end
 
       def receive_notification(notification)

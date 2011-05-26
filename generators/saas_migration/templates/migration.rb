@@ -47,6 +47,7 @@ class CreateSubscriptionEtc < ActiveRecord::Migration
       t.string  :action
       t.text    :params
       t.boolean :test
+      t.string  :description
       t.timestamps
     end
     

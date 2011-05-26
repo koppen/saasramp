@@ -30,6 +30,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.string   "action"
     t.text     "params"
     t.boolean  "test"
+    t.string   "description"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
