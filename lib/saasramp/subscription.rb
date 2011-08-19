@@ -75,7 +75,6 @@ module Saasramp
     end
 
     module ClassMethods
-      def cm; puts 'I am a class method'; end
     end
 
     module InstanceMethods
